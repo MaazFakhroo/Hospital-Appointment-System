@@ -1,0 +1,57 @@
+# Angular
+/dist
+/node_modules
+/out-tsc
+/bazel-out
+/.angular
+/src/.env
+/.env.local
+/.env.*.local
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+/coverage
+*.lcov
+
+# Compilation output
+/dist
+/tmp
+/out-tsc
+.angular/cache/
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
