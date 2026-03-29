@@ -1,0 +1,102 @@
+<div class="app-layout">
+  <header class="app-header">
+    <a class="logo" href="/patient">Medi<span>Book</span></a>
+    <div class="header-actions">
+      <span class="badge">🏥 City General Hospital</span>
+      <a class="btn-outline" href="/patient">← Back to Dashboard</a>
+    </div>
+  </header>
+
+  <div class="app" style="display: flex; flex: 1;">
+    <main style="flex: 1; overflow: auto;">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Book an Appointment</div>
+          <div class="page-subtitle">Select a doctor, date, and time slot to schedule your visit.</div>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 600px;">
+        <form [formGroup]="bookingForm" (ngSubmit)="onSubmit()">
+          <!-- Doctor Selection -->
+          <div class="form-group">
+            <label class="form-label">Select Doctor</label>
+            <select class="form-input form-select" formControlName="doctor" (change)="onDoctorSelect()">
+              <option value="">— Choose a doctor —</option>
+              <option *ngFor="let doc of doctors" [value]="doc.id">
+                {{ doc.name }} — {{ doc.specialization }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Date Selection -->
+          <div class="form-group">
+            <label class="form-label">Preferred Date</label>
+            <input 
+              class="form-input" 
+              type="date" 
+              formControlName="date"
+              (change)="onDateSelect()">
+          </div>
+
+          <!-- Time Slot Selection -->
+          <div class="form-group">
+            <label class="form-label">Select Time Slot</label>
+            <div class="time-slots">
+              <button 
+                *ngFor="let slot of availableSlots"
+                type="button"
+                class="time-slot-btn"
+                [class.selected]="selectedSlot === slot"
+                (click)="selectSlot(slot)">
+                {{ slot }}
+              </button>
+            </div>
+            <div *ngIf="availableSlots.length === 0 && bookingForm.get('date')?.value" style="padding: 12px; color: var(--text3); text-align: center;">
+              ❌ No slots available on this date
+            </div>
+          </div>
+
+          <!-- Reason -->
+          <div class="form-group">
+            <label class="form-label">Reason for Visit</label>
+            <input 
+              class="form-input" 
+              type="text" 
+              formControlName="reason"
+              placeholder="Brief description of symptoms or reason">
+          </div>
+
+          <!-- Submit -->
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel" (click)="router.navigate(['/patient'])">Cancel</button>
+            <button type="submit" class="btn-primary" style="flex: 2;" [disabled]="isLoading">
+              {{ isLoading ? '⏳ Booking...' : '✅ Confirm Booking' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</div>
+
+<style>
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .app {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235c5c5c' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 38px;
+  }
+</style>

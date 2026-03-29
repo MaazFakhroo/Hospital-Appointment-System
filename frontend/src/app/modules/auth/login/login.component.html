@@ -1,0 +1,116 @@
+<div class="login-container">
+  <div class="login-left">
+    <div class="login-brand">Medi<span>Book</span></div>
+    <div class="login-tagline">Smart Hospital Appointment Scheduling System. Reducing patient wait times through intelligent scheduling.</div>
+    <div class="login-features">
+      <div class="login-feature">
+        <div class="feat-icon">📅</div>
+        <div class="feat-text">
+          <strong>Easy Booking</strong>
+          Schedule appointments instantly
+        </div>
+      </div>
+      <div class="login-feature">
+        <div class="feat-icon">🤖</div>
+        <div class="feat-text">
+          <strong>AI Suggestions</strong>
+          Get doctor recommendations based on symptoms
+        </div>
+      </div>
+      <div class="login-feature">
+        <div class="feat-icon">📩</div>
+        <div class="feat-text">
+          <strong>Smart Reminders</strong>
+          Never miss an appointment again
+        </div>
+      </div>
+    </div>
+    <div class="login-art">🏥</div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-card">
+      <div class="login-title">Login to MediBook</div>
+      <div class="login-sub">Welcome back! Please login to your account.</div>
+
+      <div class="role-tabs">
+        <button 
+          class="role-tab" 
+          [class.active]="selectedRole === 'patient'"
+          (click)="onRoleSelect('patient')">
+          👤 Patient
+        </button>
+        <button 
+          class="role-tab" 
+          [class.active]="selectedRole === 'doctor'"
+          (click)="onRoleSelect('doctor')">
+          👨‍⚕️ Doctor
+        </button>
+        <button 
+          class="role-tab" 
+          [class.active]="selectedRole === 'admin'"
+          (click)="onRoleSelect('admin')">
+          🔑 Admin
+        </button>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input 
+            class="form-input" 
+            type="email" 
+            formControlName="email"
+            placeholder="you@example.com">
+          <div *ngIf="loginForm.get('email')?.hasError('required')" class="error-message">
+            ❌ Email is required
+          </div>
+          <div *ngIf="loginForm.get('email')?.hasError('email')" class="error-message">
+            ❌ Invalid email format
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input 
+            class="form-input" 
+            type="password" 
+            formControlName="password"
+            placeholder="Enter your password">
+          <div *ngIf="loginForm.get('password')?.hasError('required')" class="error-message">
+            ❌ Password is required
+          </div>
+          <div *ngIf="loginForm.get('password')?.hasError('minlength')" class="error-message">
+            ❌ Password must be at least 6 characters
+          </div>
+        </div>
+
+        <div *ngIf="errorMessage" class="error-alert">
+          {{ errorMessage }}
+        </div>
+
+        <button type="submit" class="btn-primary" style="width: 100%; margin-bottom: 16px;" [disabled]="isLoading">
+          {{ isLoading ? '⏳ Logging in...' : '🔓 Login' }}
+        </button>
+      </form>
+
+      <div class="divider">or try demo login</div>
+
+      <div class="demo-buttons">
+        <button class="demo-btn demo-patient" (click)="quickLogin('patient')">
+          👤 Patient Demo
+        </button>
+        <button class="demo-btn demo-doctor" (click)="quickLogin('doctor')">
+          👨‍⚕️ Doctor Demo
+        </button>
+        <button class="demo-btn demo-admin" (click)="quickLogin('admin')">
+          🔑 Admin Demo
+        </button>
+      </div>
+
+      <div class="login-footer">
+        Default credentials: any email + password123
+      </div>
+    </div>
+  </div>
+</div>
