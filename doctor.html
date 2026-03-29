@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediBook — Doctor Portal</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.slot-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.slot-item { border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 6px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text2); transition: all 0.15s; position: relative; }
+.slot-item.open { border-color: var(--accent3); background: var(--accent2); color: var(--accent); }
+.slot-item.booked { background: var(--gold-light); color: var(--gold); border-color: #e0c060; cursor: default; }
+.slot-item.blocked { background: var(--red-light); color: var(--red); border-color: #e0a0a0; }
+.slot-item:not(.booked):not(.blocked):hover { border-color: var(--accent); background: var(--accent2); color: var(--accent); }
+.slot-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+.patient-queue { display: flex; flex-direction: column; gap: 8px; }
+.queue-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); transition: transform 0.15s; }
+.queue-item:hover { transform: translateX(2px); }
+.queue-num { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.queue-info { flex: 1; }
+.queue-name { font-weight: 600; font-size: 14px; }
+.queue-reason { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.queue-time { font-size: 12px; font-weight: 600; color: var(--accent); }
+.toggle-switch { display: flex; align-items: center; gap: 10px; }
+.switch { position: relative; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; inset: 0; background: var(--border); border-radius: 24px; cursor: pointer; transition: background 0.2s; }
+.slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+input:checked + .slider { background: var(--accent); }
+input:checked + .slider::before { transform: translateX(20px); }
+.toggle-label { font-size: 14px; font-weight: 500; }
+.note-card { background: var(--gold-light); border: 1px solid #e0d080; border-radius: var(--radius-sm); padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; font-size: 13px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="dashboard.html">Medi<span>Book</span></a>
+  <div class="header-actions">
+    <span class="badge">🏥 City General Hospital</span>
+    <div class="toggle-switch">
+      <label class="switch"><input type="checkbox" id="dutyToggle" checked onchange="toggleDuty(this)"><span class="slider"></span></label>
+      <span class="toggle-label" id="dutyLabel">On Duty</span>
+    </div>
+    <button class="btn-outline" onclick="logout()">Logout</button>
+    <div class="user-chip">
+      <div class="user-avatar" style="background:#6b3fa0">SI</div>
+      <span class="user-name">Dr. Sneha Iyer</span>
+    </div>
+  </div>
+</header>
+<div class="app">
+  <nav class="sidebar">
+    <div class="nav-section-label">Doctor Portal</div>
+    <a class="nav-item active" href="doctor.html"><span class="icon">📊</span> My Dashboard</a>
+    <a class="nav-item" href="#"><span class="icon">📅</span> My Schedule</a>
+    <a class="nav-item" href="#"><span class="icon">🩺</span> Patient Queue <span class="nav-count">6</span></a>
+    <a class="nav-item" href="calendar.html"><span class="icon">📆</span> Availability</a>
+    <a class="nav-item" href="#"><span class="icon">📋</span> My Reports</a>
+    <div class="nav-spacer"></div>
+    <a class="nav-item" href="index.html"><span class="icon">🚪</span> Logout</a>
+  </nav>
+  <main>
+    <div class="page-header">
+      <div>
+        <div class="page-title">Good morning, Dr. Iyer 👋</div>
+        <div class="page-subtitle">Dermatologist · Sunday, March 29, 2026</div>
+      </div>
+      <div class="search-bar">
+        <span style="color:var(--text3)">🔍</span>
+        <input type="text" placeholder="Search patients…">
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">🩺</div><div class="stat-value">8</div><div class="stat-label">Today's Patients</div><div class="stat-change up">2 pending check-in</div></div>
+      <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value">3</div><div class="stat-label">In Waiting Room</div><div class="stat-change down">Avg wait: 12 min</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">5</div><div class="stat-label">Completed Today</div><div class="stat-change up">On schedule</div></div>
+      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value">4.9</div><div class="stat-label">Patient Rating</div><div class="stat-change up">↑ 0.1 this month</div></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- AVAILABILITY MANAGEMENT -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Today's Slot Availability</div>
+          <button class="btn-outline" style="padding:6px 14px;font-size:12px" onclick="saveAvail()">Save Changes</button>
+        </div>
+        <div class="slot-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent2);border:1.5px solid var(--accent3)"></div>Open</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--gold-light);border:1.5px solid #e0c060"></div>Booked</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red-light);border:1.5px solid #e0a0a0"></div>Blocked</div>
+        </div>
+        <div class="slot-grid" id="slotGrid"></div>
+        <div class="note-card" style="margin-top:16px">
+          <span style="font-size:18px">⚠️</span>
+          <div>Click any <strong>open</strong> slot to block it. Blocked slots will not be shown to patients during booking.</div>
+        </div>
+      </div>
+
+      <!-- PATIENT QUEUE -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Today's Patient Queue</div>
+          <span class="pill pill-green">6 patients</span>
+        </div>
+        <div class="patient-queue" id="queueList"></div>
+      </div>
+    </div>
+
+    <!-- APPOINTMENT TABLE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">This Week's Appointments</div>
+        <div class="tab-bar">
+          <div class="tab active" onclick="setTab(this,'all')">All</div>
+          <div class="tab" onclick="setTab(this,'completed')">Completed</div>
+          <div class="tab" onclick="setTab(this,'upcoming')">Upcoming</div>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Patient</th><th>Date & Time</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="apptTable"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<script>
+const slots = [
+  { time:'9:00 AM', status:'booked' }, { time:'9:30 AM', status:'booked' },
+  { time:'10:00 AM', status:'open' }, { time:'10:30 AM', status:'booked' },
+  { time:'11:00 AM', status:'open' }, { time:'11:30 AM', status:'blocked' },
+  { time:'2:00 PM', status:'booked' }, { time:'2:30 PM', status:'open' },
+  { time:'3:00 PM', status:'open' }, { time:'3:30 PM', status:'booked' },
+  { time:'4:00 PM', status:'open' }, { time:'4:30 PM', status:'open' },
+];
+const queue = [
+  { num:1, name:'Deepa Rao', reason:'Acne & Skin Rash Evaluation', time:'Now', status:'In Room' },
+  { num:2, name:'Rajesh Kumar', reason:'Follow-up: Eczema Treatment', time:'~10 min', status:'Waiting' },
+  { num:3, name:'Priya Nair', reason:'New Consultation: Psoriasis', time:'~22 min', status:'Waiting' },
+  { num:4, name:'Ananya Shah', reason:'Post-procedure Check', time:'~35 min', status:'Scheduled' },
+];
+const appts = [
+  { patient:'Deepa Rao', date:'Mar 29 · 9:00 AM', reason:'Acne evaluation', status:'completed' },
+  { patient:'Rajesh Kumar', date:'Mar 29 · 9:30 AM', reason:'Eczema follow-up', status:'completed' },
+  { patient:'Priya Nair', date:'Mar 29 · 10:00 AM', reason:'Psoriasis', status:'upcoming' },
+  { patient:'Ananya Shah', date:'Mar 29 · 10:30 AM', reason:'Post-procedure', status:'upcoming' },
+  { patient:'Kiran Mehta', date:'Mar 30 · 9:00 AM', reason:'Skin allergy test', status:'upcoming' },
+  { patient:'Sanya Gupta', date:'Mar 31 · 11:00 AM', reason:'Hair loss consultation', status:'upcoming' },
+];
+
+function renderSlots() {
+  document.getElementById('slotGrid').innerHTML = slots.map((s, i) => `
+    <div class="slot-item ${s.status}" onclick="toggleSlot(${i})" title="${s.status}">
+      <div>${s.time}</div>
+      <div style="font-size:10px;margin-top:3px;opacity:0.7">${s.status}</div>
+    </div>`).join('');
+}
+function toggleSlot(i) {
+  if (slots[i].status === 'booked') return;
+  slots[i].status = slots[i].status === 'open' ? 'blocked' : 'open';
+  renderSlots();
+}
+renderSlots();
+
+document.getElementById('queueList').innerHTML = queue.map(q => `
+  <div class="queue-item">
+    <div class="queue-num">${q.num}</div>
+    <div class="queue-info"><div class="queue-name">${q.name}</div><div class="queue-reason">${q.reason}</div></div>
+    <div style="text-align:right"><div class="queue-time">${q.time}</div><span class="pill ${q.status==='In Room'?'pill-green':q.status==='Waiting'?'pill-gold':'pill-gray'}">${q.status}</span></div>
+  </div>`).join('');
+
+let curTab = 'all';
+function setTab(el, tab) { document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); curTab = tab; renderTable(); }
+function renderTable() {
+  const filtered = curTab === 'all' ? appts : appts.filter(a => a.status === curTab);
+  document.getElementById('apptTable').innerHTML = filtered.map(a => `
+    <tr>
+      <td><strong>${a.patient}</strong></td>
+      <td>${a.date}</td>
+      <td style="color:var(--text2)">${a.reason}</td>
+      <td><span class="pill ${a.status==='completed'?'pill-green':'pill-gold'}">${a.status.charAt(0).toUpperCase()+a.status.slice(1)}</span></td>
+      <td><button class="act-btn" style="background:var(--accent2);color:var(--accent);font-size:11px;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;font-family:inherit" onclick="showToast('📋 Notes opened for ${a.patient}','var(--accent)')">View Notes</button></td>
+    </tr>`).join('');
+}
+renderTable();
+
+function toggleDuty(el) {
+  document.getElementById('dutyLabel').textContent = el.checked ? 'On Duty' : 'Off Duty';
+  showToast(el.checked ? '✅ You are now marked as On Duty' : '⛔ You are marked Off Duty', el.checked ? 'var(--accent)' : 'var(--red)');
+}
+function saveAvail() { showToast('✅ Availability saved! Patients will see updated slots.', 'var(--accent)'); }
+function showToast(msg, color) {
+  const t = document.getElementById('toast'); document.getElementById('toastMsg').textContent = msg;
+  t.style.background = color; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000);
+}
+function logout() {
+  localStorage.removeItem('loggedInRole');
+  window.location.href = 'index.html';
+}
+if (localStorage.getItem('loggedInRole') !== 'doctor') {
+  window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>

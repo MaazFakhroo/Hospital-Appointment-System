@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediBook — Reports</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.chart-bar-v { display: flex; align-items: flex-end; gap: 10px; height: 160px; padding: 0 8px; }
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+.bar-v { width: 100%; border-radius: 6px 6px 0 0; background: var(--accent); transition: height 0.8s ease; min-width: 24px; position: relative; cursor: pointer; }
+.bar-v:hover { opacity: 0.8; }
+.bar-v-label { font-size: 11px; color: var(--text3); font-weight: 600; }
+.bar-v-val { font-size: 10px; color: var(--text2); font-weight: 700; }
+.donut-wrap { display: flex; align-items: center; gap: 24px; }
+.donut-legend { display: flex; flex-direction: column; gap: 10px; }
+.legend-row { display: flex; align-items: center; gap: 8px; }
+.legend-color { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.legend-name { font-size: 13px; color: var(--text2); }
+.legend-pct { font-size: 13px; font-weight: 700; margin-left: auto; }
+.kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.kpi-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 20px; }
+.kpi-label { font-size: 12px; color: var(--text3); font-weight: 600; margin-bottom: 6px; }
+.kpi-value { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--accent); }
+.kpi-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.report-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.report-row:hover { border-color: var(--accent); transform: translateX(2px); }
+.report-icon { width: 42px; height: 42px; border-radius: 10px; background: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.report-name { font-weight: 600; font-size: 14px; }
+.report-date { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.dl-btn { background: var(--accent2); color: var(--accent); border: 1px solid var(--accent3); border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
+.dl-btn:hover { background: var(--accent); color: #fff; }
+.trend-up { color: var(--accent); font-weight: 700; font-size: 12px; }
+.trend-down { color: var(--red); font-weight: 700; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="dashboard.html">Medi<span>Book</span></a>
+  <div class="header-actions">
+    <span class="badge">🏥 City General Hospital</span>
+    <button class="btn-primary" onclick="showToast('📊 Full report downloading…','var(--accent)')">⬇ Export All Reports</button>
+    <div class="user-chip"><div class="user-avatar">AD</div><span class="user-name">Admin</span></div>
+  </div>
+</header>
+<div class="app">
+  <nav class="sidebar">
+    <div class="nav-section-label">Main</div>
+    <a class="nav-item" href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+    <a class="nav-item" href="calendar.html"><span class="icon">📅</span> Calendar</a>
+    <a class="nav-item" href="#"><span class="icon">🩺</span> Appointments</a>
+    <a class="nav-item" href="doctor.html"><span class="icon">👨‍⚕️</span> Doctors</a>
+    <a class="nav-item" href="patient.html"><span class="icon">🧑‍🤝‍🧑</span> Patients</a>
+    <div class="nav-section-label">Tools</div>
+    <a class="nav-item" href="ai-suggest.html"><span class="icon">🤖</span> AI Suggest</a>
+    <a class="nav-item" href="#"><span class="icon">📩</span> Reminders</a>
+    <a class="nav-item active" href="reports.html"><span class="icon">📋</span> Reports</a>
+    <div class="nav-spacer"></div>
+    <a class="nav-item" href="index.html"><span class="icon">🚪</span> Logout</a>
+  </nav>
+  <main>
+    <div class="page-header">
+      <div>
+        <div class="page-title">Reports & Analytics</div>
+        <div class="page-subtitle">Hospital performance metrics · March 2026</div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab active" onclick="setTab(this)">This Month</div>
+        <div class="tab" onclick="setTab(this)">Last Month</div>
+        <div class="tab" onclick="setTab(this)">This Year</div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">187</div><div class="stat-label">Total Appointments</div><div class="stat-change up">↑ 14% vs last month</div></div>
+      <div class="stat-card"><div class="stat-icon">❌</div><div class="stat-value">12</div><div class="stat-label">Cancellations</div><div class="stat-change up">↓ 3% vs last month</div></div>
+      <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value">18m</div><div class="stat-label">Avg Wait Time</div><div class="stat-change up">↓ 4min improved</div></div>
+      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value">4.7</div><div class="stat-label">Patient Satisfaction</div><div class="stat-change up">↑ 0.2 this month</div></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- MONTHLY CHART -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">Appointments Over Time</div><span style="font-size:12px;color:var(--text3)">Daily · March 2026</span></div>
+        <div class="chart-bar-v" id="barChart"></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 16px 0;font-size:11px;color:var(--text3)" id="barLabels"></div>
+      </div>
+
+      <!-- SPECIALTY BREAKDOWN -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">By Specialty</div></div>
+        <div class="donut-wrap">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="54" fill="none" stroke="#e2ddd8" stroke-width="20"/>
+            <circle cx="70" cy="70" r="54" fill="none" stroke="#1a6b5a" stroke-width="20" stroke-dasharray="118 221" stroke-dashoffset="0" transform="rotate(-90 70 70)"/>
+            <circle cx="70" cy="70" r="54" fill="none" stroke="#0d4a7a" stroke-width="20" stroke-dasharray="87 252" stroke-dashoffset="-118" transform="rotate(-90 70 70)"/>
+            <circle cx="70" cy="70" r="54" fill="none" stroke="#6b3fa0" stroke-width="20" stroke-dasharray="78 261" stroke-dashoffset="-205" transform="rotate(-90 70 70)"/>
+            <circle cx="70" cy="70" r="54" fill="none" stroke="#d4730a" stroke-width="20" stroke-dasharray="56 283" stroke-dashoffset="-283" transform="rotate(-90 70 70)"/>
+            <text x="70" y="65" text-anchor="middle" font-family="Playfair Display" font-size="20" font-weight="700" fill="#1c1c1c">187</text>
+            <text x="70" y="82" text-anchor="middle" font-family="DM Sans" font-size="10" fill="#9c9c9c">total</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="legend-row"><div class="legend-color" style="background:#1a6b5a"></div><span class="legend-name">Cardiology</span><span class="legend-pct">34%</span></div>
+            <div class="legend-row"><div class="legend-color" style="background:#0d4a7a"></div><span class="legend-name">Neurology</span><span class="legend-pct">25%</span></div>
+            <div class="legend-row"><div class="legend-color" style="background:#6b3fa0"></div><span class="legend-name">Dermatology</span><span class="legend-pct">22%</span></div>
+            <div class="legend-row"><div class="legend-color" style="background:#d4730a"></div><span class="legend-name">Others</span><span class="legend-pct">19%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- DOCTOR PERFORMANCE -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">Doctor Performance</div></div>
+        <div class="kpi-row" style="margin-bottom:16px">
+          <div class="kpi-card"><div class="kpi-label">Most Bookings</div><div class="kpi-value">42</div><div class="kpi-sub">Dr. Priya Sharma</div></div>
+          <div class="kpi-card"><div class="kpi-label">Avg Rating</div><div class="kpi-value">4.7</div><div class="kpi-sub">All doctors combined</div></div>
+          <div class="kpi-card"><div class="kpi-label">On-Time Rate</div><div class="kpi-value">91%</div><div class="kpi-sub">Start within 5 min</div></div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Doctor</th><th>Appts</th><th>Rating</th><th>Trend</th></tr></thead>
+          <tbody id="perfTable"></tbody>
+        </table>
+      </div>
+
+      <!-- DOWNLOADABLE REPORTS -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">Generated Reports</div><button class="btn-outline" style="padding:6px 14px;font-size:12px" onclick="genReport()">+ Generate New</button></div>
+        <div id="reportsList"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<script>
+const perfData = [
+  { name:'Dr. Priya Sharma', spec:'Cardiology', appts:42, rating:'4.9', trend:'up' },
+  { name:'Dr. Rahul Mehta', spec:'Neurology', appts:31, rating:'4.6', trend:'up' },
+  { name:'Dr. Sneha Iyer', spec:'Dermatology', appts:28, rating:'4.8', trend:'down' },
+  { name:'Dr. Arjun Nair', spec:'Orthopedic', appts:25, rating:'4.5', trend:'up' },
+  { name:'Dr. Ravi Krishnan', spec:'Pulmonology', appts:18, rating:'4.2', trend:'down' },
+];
+document.getElementById('perfTable').innerHTML = perfData.map(d => `
+  <tr>
+    <td><strong>${d.name}</strong><div style="font-size:11px;color:var(--text3)">${d.spec}</div></td>
+    <td><strong>${d.appts}</strong></td>
+    <td>⭐ ${d.rating}</td>
+    <td><span class="${d.trend==='up'?'trend-up':'trend-down'}">${d.trend==='up'?'↑ Growing':'↓ Dipping'}</span></td>
+  </tr>`).join('');
+
+const reports = [
+  { icon:'📊', name:'March 2026 Monthly Summary', date:'Generated: Mar 29, 2026', size:'2.4 MB' },
+  { icon:'💰', name:'Revenue & Billing Report', date:'Generated: Mar 28, 2026', size:'1.8 MB' },
+  { icon:'🩺', name:'Doctor Utilization Report', date:'Generated: Mar 25, 2026', size:'980 KB' },
+  { icon:'📩', name:'Reminder Delivery Report', date:'Generated: Mar 20, 2026', size:'560 KB' },
+  { icon:'📅', name:'February 2026 Summary', date:'Generated: Mar 1, 2026', size:'2.1 MB' },
+];
+function renderReports() {
+  document.getElementById('reportsList').innerHTML = reports.map(r => `
+    <div class="report-row">
+      <div class="report-icon">${r.icon}</div>
+      <div style="flex:1"><div class="report-name">${r.name}</div><div class="report-date">${r.date} · ${r.size}</div></div>
+      <button class="dl-btn" onclick="showToast('⬇ Downloading ${r.name}…','var(--accent)')">⬇ Download</button>
+    </div>`).join('');
+}
+renderReports();
+
+// BAR CHART
+const days = ['1','5','8','12','15','18','22','25','29'];
+const vals = [4, 8, 6, 12, 10, 7, 9, 11, 13];
+const max = Math.max(...vals);
+document.getElementById('barChart').innerHTML = days.map((d, i) => `
+  <div class="bar-col">
+    <div class="bar-v-val">${vals[i]}</div>
+    <div class="bar-v" style="height:${(vals[i]/max)*130}px" title="Mar ${d}: ${vals[i]} appts"></div>
+    <div class="bar-v-label">Mar ${d}</div>
+  </div>`).join('');
+
+function setTab(el) { document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
+function genReport() {
+  const name = prompt('Report name (or press OK for default):', 'March 2026 Custom Report') || 'Custom Report';
+  reports.unshift({ icon:'📋', name, date:'Generated: Just now', size:'—' });
+  renderReports();
+  showToast('✅ Report generated successfully!', 'var(--accent)');
+}
+function showToast(msg, color) {
+  const t = document.getElementById('toast'); document.getElementById('toastMsg').textContent = msg;
+  t.style.background = color; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

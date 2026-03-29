@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediBook — Calendar</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.cal-full { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.cal-full-day-label { text-align: center; padding: 10px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text3); background: var(--surface2); border-bottom: 1px solid var(--border); }
+.cal-full-day { min-height: 100px; padding: 8px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; vertical-align: top; position: relative; }
+.cal-full-day:nth-child(7n) { border-right: none; }
+.cal-full-day:hover { background: var(--accent2); }
+.cal-full-day.today { background: linear-gradient(135deg, var(--accent2) 0%, #d0ede7 100%); }
+.cal-full-day.selected { background: var(--accent2); outline: 2px solid var(--accent); outline-offset: -2px; }
+.cal-full-day.empty { background: var(--surface2); cursor: default; }
+.cal-full-day.empty:hover { background: var(--surface2); }
+.day-num { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.day-num.today-num { width: 24px; height: 24px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.day-event { background: var(--accent); color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 11px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.day-event.pending { background: var(--gold); }
+.day-event.blocked { background: var(--red); }
+.detail-panel { background: var(--surface); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.detail-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.detail-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+.slot-list { display: flex; flex-direction: column; gap: 8px; }
+.slot-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); }
+.slot-time { font-weight: 700; font-size: 14px; color: var(--accent); width: 68px; flex-shrink: 0; }
+.slot-doctor { flex: 1; font-size: 13px; }
+.slot-spec { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.view-toggle { display: flex; gap: 4px; }
+.view-btn { padding: 6px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text2); transition: all 0.15s; border: 1px solid var(--border); background: var(--surface2); }
+.view-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="dashboard.html">Medi<span>Book</span></a>
+  <div class="header-actions">
+    <span class="badge">🏥 City General Hospital</span>
+    <button class="btn-primary" onclick="document.getElementById('bookModal').classList.add('open')">+ Book Slot</button>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+      <span class="user-name">Admin</span>
+    </div>
+  </div>
+</header>
+<div class="app">
+  <nav class="sidebar">
+    <div class="nav-section-label">Main</div>
+    <a class="nav-item" href="dashboard.html"><span class="icon">📊</span> Dashboard</a>
+    <a class="nav-item active" href="calendar.html"><span class="icon">📅</span> Calendar <span class="nav-count">12</span></a>
+    <a class="nav-item" href="#"><span class="icon">🩺</span> Appointments</a>
+    <a class="nav-item" href="doctor.html"><span class="icon">👨‍⚕️</span> Doctors</a>
+    <a class="nav-item" href="patient.html"><span class="icon">🧑‍🤝‍🧑</span> Patients</a>
+    <div class="nav-section-label">Tools</div>
+    <a class="nav-item" href="ai-suggest.html"><span class="icon">🤖</span> AI Suggest</a>
+    <a class="nav-item" href="#"><span class="icon">📩</span> Reminders</a>
+    <a class="nav-item" href="reports.html"><span class="icon">📋</span> Reports</a>
+    <div class="nav-spacer"></div>
+    <a class="nav-item" href="index.html"><span class="icon">🚪</span> Logout</a>
+  </nav>
+  <main>
+    <div class="page-header">
+      <div>
+        <div class="page-title">Availability Calendar</div>
+        <div class="page-subtitle">View and manage doctor schedules</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <select class="form-input form-select" style="width:200px" onchange="filterDoctor(this.value)">
+          <option value="all">All Doctors</option>
+          <option>Dr. Priya Sharma</option>
+          <option>Dr. Rahul Mehta</option>
+          <option>Dr. Sneha Iyer</option>
+          <option>Dr. Arjun Nair</option>
+        </select>
+        <div class="view-toggle">
+          <button class="view-btn active" onclick="setView(this,'month')">Month</button>
+          <button class="view-btn" onclick="setView(this,'week')">Week</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="grid-template-columns:2fr 1fr;align-items:start">
+      <!-- FULL CALENDAR -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)">
+          <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+          <div class="cal-month" id="calMonth" style="flex:1;text-align:center;font-family:'Playfair Display',serif;font-size:20px;font-weight:700"></div>
+          <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="cal-full" id="calFull"></div>
+        <div style="display:flex;gap:16px;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--accent);display:inline-block"></span> Appointments</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--gold);display:inline-block"></span> Pending</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:var(--red);display:inline-block"></span> Blocked</div>
+        </div>
+      </div>
+
+      <!-- SIDE PANEL -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="detail-panel">
+          <div class="detail-title" id="detailDate">March 29, 2026</div>
+          <div class="detail-sub" id="detailCount">6 appointments scheduled</div>
+          <div class="slot-list" id="slotList"></div>
+          <button class="btn-primary" style="width:100%;margin-top:16px;text-align:center" onclick="document.getElementById('bookModal').classList.add('open')">+ Add Appointment</button>
+        </div>
+
+        <!-- MINI DOCTOR LIST -->
+        <div class="card" style="padding:20px">
+          <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;margin-bottom:14px">Doctor Status</div>
+          <div id="docStatus"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- BOOK MODAL -->
+<div class="modal-overlay" id="bookModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-title">Book a Slot</div>
+    <div class="modal-sub">Create a new appointment entry on the calendar.</div>
+    <div class="form-group"><label class="form-label">Patient Name</label><input class="form-input" type="text" placeholder="Full name"></div>
+    <div class="form-group"><label class="form-label">Doctor</label>
+      <select class="form-input form-select">
+        <option>Dr. Priya Sharma — Cardiologist</option>
+        <option>Dr. Rahul Mehta — Neurologist</option>
+        <option>Dr. Sneha Iyer — Dermatologist</option>
+        <option>Dr. Arjun Nair — Orthopedic</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" value="2026-03-29"></div>
+    <div class="form-group">
+      <label class="form-label">Time Slot</label>
+      <div class="time-slots" id="modalSlots"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="document.getElementById('bookModal').classList.remove('open')">Cancel</button>
+      <button class="btn-primary" style="flex:2" onclick="confirmBook()">✅ Confirm</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
+
+<script>
+let calDate = new Date(2026, 2, 1);
+const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+const events = {
+  '2026-3-3': [{time:'9:00 AM',doc:'Dr. Priya Sharma',spec:'Cardiology',type:'confirmed'},{time:'11:00 AM',doc:'Dr. Rahul Mehta',spec:'Neurology',type:'pending'}],
+  '2026-3-7': [{time:'10:00 AM',doc:'Dr. Sneha Iyer',spec:'Dermatology',type:'confirmed'}],
+  '2026-3-12': [{time:'9:00 AM',doc:'Dr. Arjun Nair',spec:'Orthopedic',type:'confirmed'},{time:'2:00 PM',doc:'Dr. Priya Sharma',spec:'Cardiology',type:'blocked'}],
+  '2026-3-15': [{time:'11:30 AM',doc:'Dr. Rahul Mehta',spec:'Neurology',type:'confirmed'}],
+  '2026-3-22': [{time:'9:00 AM',doc:'Dr. Sneha Iyer',spec:'Dermatology',type:'confirmed'},{time:'10:00 AM',doc:'Dr. Arjun Nair',spec:'Orthopedic',type:'pending'},{time:'2:30 PM',doc:'Dr. Priya Sharma',spec:'Cardiology',type:'confirmed'}],
+  '2026-3-29': [
+    {time:'9:00 AM',doc:'Dr. Priya Sharma',spec:'Cardiology',type:'confirmed'},
+    {time:'9:30 AM',doc:'Dr. Rahul Mehta',spec:'Neurology',type:'pending'},
+    {time:'10:00 AM',doc:'Dr. Sneha Iyer',spec:'Dermatology',type:'confirmed'},
+    {time:'11:00 AM',doc:'Dr. Arjun Nair',spec:'Orthopedic',type:'confirmed'},
+    {time:'2:00 PM',doc:'Dr. Priya Sharma',spec:'Cardiology',type:'blocked'},
+    {time:'3:30 PM',doc:'Dr. Sneha Iyer',spec:'Dermatology',type:'pending'},
+  ],
+};
+
+let selDay = 29;
+
+function renderCal() {
+  document.getElementById('calMonth').textContent = `${months[calDate.getMonth()]} ${calDate.getFullYear()}`;
+  const grid = document.getElementById('calFull');
+  grid.innerHTML = '';
+  dayNames.forEach(d => { const el = document.createElement('div'); el.className='cal-full-day-label'; el.textContent=d; grid.appendChild(el); });
+  const firstDay = new Date(calDate.getFullYear(), calDate.getMonth(), 1).getDay();
+  const daysInMonth = new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate();
+  const today = new Date();
+  for (let i=0; i<firstDay; i++) { const el=document.createElement('div'); el.className='cal-full-day empty'; grid.appendChild(el); }
+  for (let d=1; d<=daysInMonth; d++) {
+    const el = document.createElement('div');
+    const key = `${calDate.getFullYear()}-${calDate.getMonth()}-${d}`;
+    const isToday = d===today.getDate() && calDate.getMonth()===today.getMonth() && calDate.getFullYear()===today.getFullYear();
+    let cls = 'cal-full-day';
+    if (isToday) cls += ' today';
+    if (d === selDay && calDate.getMonth()===2 && calDate.getFullYear()===2026) cls += ' selected';
+    el.className = cls;
+    const numEl = document.createElement('div');
+    numEl.className = 'day-num' + (isToday ? ' today-num' : ''); numEl.textContent = d;
+    el.appendChild(numEl);
+    if (events[key]) {
+      events[key].slice(0,2).forEach(ev => {
+        const evEl = document.createElement('div');
+        evEl.className = `day-event ${ev.type}`;
+        evEl.textContent = ev.time + ' · ' + ev.doc.split(' ')[1];
+        el.appendChild(evEl);
+      });
+      if (events[key].length > 2) {
+        const more = document.createElement('div');
+        more.style.cssText = 'font-size:10px;color:var(--text3);padding:2px 4px';
+        more.textContent = `+${events[key].length-2} more`;
+        el.appendChild(more);
+      }
+    }
+    el.onclick = () => selectDay(d);
+    grid.appendChild(el);
+  }
+}
+function selectDay(d) {
+  selDay = d;
+  renderCal();
+  const key = `${calDate.getFullYear()}-${calDate.getMonth()}-${d}`;
+  const dayEvents = events[key] || [];
+  const months2 = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('detailDate').textContent = `${months2[calDate.getMonth()]} ${d}, ${calDate.getFullYear()}`;
+  document.getElementById('detailCount').textContent = dayEvents.length ? `${dayEvents.length} appointment${dayEvents.length>1?'s':''} scheduled` : 'No appointments';
+  document.getElementById('slotList').innerHTML = dayEvents.length
+    ? dayEvents.map(ev => `<div class="slot-row"><div class="slot-time">${ev.time}</div><div class="slot-doctor"><div>${ev.doc}</div><div class="slot-spec">${ev.spec}</div></div><span class="pill ${ev.type==='confirmed'?'pill-green':ev.type==='pending'?'pill-gold':'pill-red'}">${ev.type.charAt(0).toUpperCase()+ev.type.slice(1)}</span></div>`).join('')
+    : '<div style="text-align:center;color:var(--text3);padding:20px;font-size:14px">No appointments on this day</div>';
+}
+selectDay(29);
+function changeMonth(dir) { calDate.setMonth(calDate.getMonth()+dir); renderCal(); }
+renderCal();
+
+const docStatuses = [
+  { name:'Dr. Priya Sharma', avail:'Available', color:'#1a6b5a', avatar:'PS' },
+  { name:'Dr. Rahul Mehta', avail:'In Surgery', color:'#8b4513', avatar:'RM' },
+  { name:'Dr. Sneha Iyer', avail:'Available', color:'#6b3fa0', avatar:'SI' },
+  { name:'Dr. Arjun Nair', avail:'Available', color:'#0d4a7a', avatar:'AN' },
+];
+document.getElementById('docStatus').innerHTML = docStatuses.map(d => `
+  <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+    <div class="doc-avatar" style="background:${d.color};width:36px;height:36px;font-size:13px">${d.avatar}</div>
+    <div style="flex:1"><div style="font-size:13px;font-weight:600">${d.name}</div></div>
+    <span class="pill ${d.avail==='Available'?'pill-green':'pill-red'}" style="font-size:10px">${d.avail}</span>
+  </div>`).join('');
+
+function filterDoctor(val) { showToast(`Filtering for: ${val === 'all' ? 'All Doctors' : val}`, 'var(--accent)'); }
+function setView(el, v) { document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); }
+
+const allSlots = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','2:00 PM','2:30 PM','3:00 PM','3:30 PM'];
+const takenSlots = ['9:00 AM','9:30 AM'];
+document.getElementById('modalSlots').innerHTML = allSlots.map(s=>`<div class="time-slot ${takenSlots.includes(s)?'unavail':''}" onclick="pickSlot(this,'${s}')">${s}</div>`).join('');
+let selSlot=null;
+function pickSlot(el,s){if(el.classList.contains('unavail'))return;document.querySelectorAll('.time-slot').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');selSlot=s;}
+function confirmBook(){document.getElementById('bookModal').classList.remove('open');showToast('✅ Appointment booked and added to calendar!','var(--accent)');}
+function showToast(msg,color){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.style.background=color;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+</script>
+</body>
+</html>
