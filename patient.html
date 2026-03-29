@@ -154,7 +154,7 @@
   </div>
 </div>
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
-
+<script src="utils.js"></script>
 <script>
 const history = [
   { icon:'❤️', doc:'Dr. Priya Sharma', spec:'Cardiology', date:'Feb 15, 2026', status:'completed' },
@@ -200,18 +200,120 @@ function renderDoctors() {
 }
 renderSpecs(); renderDoctors();
 
+// Initialize date validation
+const bookDateInput = document.getElementById('bookDate');
+dateValidator.setDateInputLimits(bookDateInput);
+
+// Handle date change to update slot availability
+bookDateInput.addEventListener('change', function() {
+  const doctor = getSelectedDoctor();
+  if (doctor && this.value) {
+    updateAvailableSlots(doctor, this.value);
+  }
+});
+
+function getSelectedDoctor() {
+  const doctorText = document.getElementById('bookDoc').value;
+  if (!doctorText) return null;
+  return doctorText.split(' — ')[0];
+}
+
+function updateAvailableSlots(doctor, date) {
+  const container = document.getElementById('modalSlots');
+  const availableSlots = timeSlotManager.getAvailableSlots(doctor, date);
+  const bookedSlots = window.appointmentManager.getBookedSlotsForDate(doctor, date);
+  
+  if (availableSlots.length === 0) {
+    container.innerHTML = '<div style="padding: 12px; color: var(--text3); text-align: center; grid-column: 1/-1;">❌ No slots available on this date</div>';
+    return;
+  }
+  
+  container.innerHTML = availableSlots.map(slot => `
+    <button class="time-slot-btn" onclick="selectTimeSlot(this, '${slot}')" data-time="${slot}">
+      ${slot}
+    </button>
+  `).join('');
+  
+  if (bookedSlots.length) {
+    const info = document.createElement('div');
+    info.style.cssText = 'grid-column: 1/-1; margin-top: 12px; padding: 10px; background: var(--gold-light); border-radius: 8px; font-size: 11px; color: var(--gold);';
+    info.innerHTML = `<strong>⏰ Booked:</strong> ${bookedSlots.join(', ')}`;
+    container.appendChild(info);
+  }
+}
+
 function prefillDoc(name) {
   document.getElementById('bookDoc').value = name;
+  const selectedDate = document.getElementById('bookDate').value;
+  if (selectedDate) {
+    updateAvailableSlots(getSelectedDoctor(), selectedDate);
+  }
   document.getElementById('bookModal').classList.add('open');
 }
 
-document.getElementById('modalSlots').innerHTML = allSlots.map(s => `<div class="time-slot ${unavail.includes(s)?'unavail':''}" onclick="pickSlot(this,'${s}')">${s}</div>`).join('');
-document.getElementById('bookDate').min = new Date().toISOString().split('T')[0];
-function pickSlot(el, s) { if(el.classList.contains('unavail')) return; document.querySelectorAll('.time-slot').forEach(x=>x.classList.remove('sel')); el.classList.add('sel'); selSlot=s; }
-function confirmBook() { document.getElementById('bookModal').classList.remove('open'); showToast('✅ Appointment booked! Reminder sent via SMS & Email.','var(--accent)'); }
-function showToast(msg, color) {
-  const t = document.getElementById('toast'); document.getElementById('toastMsg').textContent = msg;
-  t.style.background = color; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3200);
+function confirmBook() {
+  const doctorSelect = document.getElementById('bookDoc');
+  const dateInput = document.getElementById('bookDate');
+  const reasonInput = document.querySelector('[placeholder="Brief description of symptoms or reason"]');
+  
+  let hasError = false;
+  
+  if (!doctorSelect.value) {
+    FormValidator.showValidationError(doctorSelect, '❌ Please select a doctor');
+    hasError = true;
+  } else {
+    FormValidator.clearValidationError(doctorSelect);
+  }
+  
+  if (!dateInput.value) {
+    FormValidator.showValidationError(dateInput, '❌ Please select a date');
+    hasError = true;
+  } else {
+    const dateValidation = dateValidator.isValidBookingDate(dateInput.value);
+    if (!dateValidation.valid) {
+      FormValidator.showValidationError(dateInput, dateValidation.message);
+      hasError = true;
+    } else {
+      FormValidator.clearValidationError(dateInput);
+    }
+  }
+  
+  if (!window.selectedTimeSlot) {
+    showToast('⏰ Please select a time slot', 'var(--red)');
+    hasError = true;
+  }
+  
+  if (!reasonInput.value || reasonInput.value.trim().length < 5) {
+    FormValidator.showValidationError(reasonInput, '❌ Please provide reason (min 5 characters)');
+    hasError = true;
+  } else {
+    FormValidator.clearValidationError(reasonInput);
+  }
+  
+  if (hasError) return;
+  
+  const doctor = doctorSelect.value.split(' — ')[0];
+  const specialty = doctorSelect.value.split(' — ')[1];
+  const result = appointmentManager.addAppointment(
+    'Aisha Patel',
+    doctor,
+    dateInput.value,
+    window.selectedTimeSlot,
+    specialty,
+    reasonInput.value
+  );
+  
+  if (result.success) {
+    showToast('✅ Appointment booked! SMS & Email reminder sent.', 'var(--accent)');
+    document.getElementById('bookModal').classList.remove('open');
+    doctorSelect.value = '';
+    dateInput.value = '';
+    reasonInput.value = '';
+    document.getElementById('modalSlots').innerHTML = '';
+    window.selectedTimeSlot = null;
+  } else {
+    showToast(result.message, 'var(--red)');
+  }
 }
 function logout() {
   localStorage.removeItem('loggedInRole');
